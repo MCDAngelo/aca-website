@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getBooks } from '../services/supabaseService';
@@ -8,11 +8,20 @@ import { useAuth } from '../context/AuthContext';
 
 const BooksPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, familyMember } = useAuth();
+  const { user, familyMember, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!authLoading && (!user || !familyMember)) {
+      navigate('/login');
+    }
+  }, [user, familyMember, authLoading, navigate]);
+  
   const { data: books = [], isLoading } = useQuery({
     queryKey: ['books'],
     queryFn: getBooks,
+    enabled: !!user && !!familyMember,
   });
 
   // Filter books based on search term
@@ -26,6 +35,17 @@ const BooksPage: React.FC = () => {
       (book.description && book.description.toLowerCase().includes(term))
     );
   });
+
+  if (authLoading || !user || !familyMember) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

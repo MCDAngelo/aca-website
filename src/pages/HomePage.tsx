@@ -5,14 +5,15 @@ import useRecommendations from '../hooks/useRecommendations';
 import Button from '../components/Button';
 import heroImage from '../assets/eugenio-mazzone-6ywyo2qtaZ8-unsplash.jpg';
 import logoImage from '../assets/ACA_book_plate_logo.png';
+import { UI_CONFIG } from '../config/constants';
 
 const HomePage: React.FC = () => {
   const { user, familyMember, isLoading: authLoading } = useAuth();
   const { recommendations, isLoading: recLoading } = useRecommendations();
   const isLoading = authLoading || recLoading;
 
-  // Get the latest 3 recommendations
-  const latestRecommendations = recommendations.slice(0, 3);
+  // Get the latest recommendations
+  const latestRecommendations = recommendations.slice(0, UI_CONFIG.HOME_PAGE_RECENT_ITEMS);
 
   // Get first name from family member name
   const firstName = familyMember?.name?.split(' ')[0] || '';
@@ -60,18 +61,21 @@ const HomePage: React.FC = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/years">
-              <Button className="px-6 py-3 text-base">Browse by Year</Button>
-            </Link>
-            <Link to="/books">
-              <Button variant="outline" className="px-6 py-3 text-base border-library-cream/70 text-library-cream hover:bg-library-cream/10">
-                View All Books
-              </Button>
-            </Link>
-            {!user && (
+            {user && familyMember ? (
+              <>
+                <Link to="/years">
+                  <Button className="px-6 py-3 text-base">Browse by Year</Button>
+                </Link>
+                <Link to="/books">
+                  <Button variant="outline" className="px-6 py-3 text-base border-library-cream/70 text-library-cream hover:bg-library-cream hover:text-library-brown transition-colors">
+                    View All Books
+                  </Button>
+                </Link>
+              </>
+            ) : (
               <Link to="/login">
                 <Button variant="secondary" className="px-6 py-3 text-base">
-                  Sign In
+                  Sign In to View Archive
                 </Button>
               </Link>
             )}

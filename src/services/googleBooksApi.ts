@@ -1,4 +1,5 @@
 import { Book } from '../types';
+import { logger } from '../utils/logger';
 
 const API_KEY = process.env.REACT_APP_GOOGLE_BOOKS_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/books/v1/volumes';
@@ -44,7 +45,7 @@ export const searchBooks = async (query: string): Promise<GoogleBookItem[]> => {
     const data = await response.json() as GoogleBooksResponse;
     return data.items || [];
   } catch (error) {
-    console.error('Error searching books:', error);
+    logger.error('Error searching books:', error);
     return [];
   }
 };
@@ -62,7 +63,7 @@ export const getBookById = async (id: string): Promise<GoogleBookItem | null> =>
     
     return await response.json() as GoogleBookItem;
   } catch (error) {
-    console.error('Error getting book by ID:', error);
+    logger.error('Error getting book by ID:', error);
     return null;
   }
 };

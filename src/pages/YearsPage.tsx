@@ -1,16 +1,37 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getYears } from '../services/supabaseService';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 
 const YearsPage: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { user, familyMember, isAdmin, isLoading: authLoading } = useAuth();
+  
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!authLoading && (!user || !familyMember)) {
+      navigate('/login');
+    }
+  }, [user, familyMember, authLoading, navigate]);
+  
   const { data: years = [], isLoading } = useQuery({
     queryKey: ['years'],
     queryFn: getYears,
+    enabled: !!user && !!familyMember,
   });
+
+  if (authLoading || !user || !familyMember) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

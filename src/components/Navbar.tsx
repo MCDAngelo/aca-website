@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
 import logoImage from '../assets/ACA_book_plate_logo.png';
+import { logger } from '../utils/logger';
+import { handleError } from '../utils/errorHandler';
 
 const Navbar: React.FC = () => {
   const { user, familyMember, isAdmin, signOut } = useAuth();
@@ -13,7 +15,7 @@ const Navbar: React.FC = () => {
 
   // Debug: Log auth state when it changes
   useEffect(() => {
-    console.log('Navbar - Auth state:', { 
+    logger.debug('Navbar - Auth state:', { 
       hasUser: !!user, 
       hasFamilyMember: !!familyMember, 
       isAdmin,
@@ -27,21 +29,20 @@ const Navbar: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    console.log('Sign out button clicked');
+    logger.debug('Sign out button clicked');
     if (isSigningOut) {
-      console.log('Already signing out, ignoring click');
+      logger.debug('Already signing out, ignoring click');
       return;
     }
     
     setIsSigningOut(true);
     try {
-      console.log('Calling signOut...');
+      logger.debug('Calling signOut...');
       await signOut();
-      console.log('SignOut successful, navigating to home...');
+      logger.debug('SignOut successful, navigating to home...');
       navigate('/');
     } catch (error) {
-      console.error('Error signing out:', error);
-      alert('Failed to sign out. Please try again.');
+      handleError(error, 'Failed to sign out. Please try again.');
     } finally {
       setIsSigningOut(false);
     }
@@ -50,12 +51,12 @@ const Navbar: React.FC = () => {
   // Build navigation links based on user authentication status
   const navLinks = [
     { to: '/', label: 'Home' },
-    { to: '/years', label: 'Years' },
-    { to: '/books', label: 'Books' },
   ];
 
-  // Only show Add Book link when user is authenticated and a family member
+  // Only show these links when user is authenticated and a family member
   if (user && familyMember) {
+    navLinks.push({ to: '/years', label: 'Years' });
+    navLinks.push({ to: '/books', label: 'Books' });
     navLinks.push({ to: '/books/new', label: 'Add Book' });
   }
 

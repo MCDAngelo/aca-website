@@ -1,9 +1,19 @@
 import { supabase } from '../supabase';
+import { logger } from '../utils/logger';
 
 const BOOK_COVERS_BUCKET = 'book-covers';
 
 /**
  * Initialize storage buckets if they don't exist
+ * 
+ * NOTE: This function should be run manually during initial setup, not at app startup.
+ * To set up storage buckets:
+ * 1. Go to your Supabase Dashboard > Storage
+ * 2. Create a new bucket called "book-covers"
+ * 3. Set it to "Public" bucket
+ * 4. Optionally configure RLS policies for the bucket
+ * 
+ * This function is kept for reference but should not be called automatically.
  */
 export const initializeStorage = async (): Promise<void> => {
   try {
@@ -12,7 +22,7 @@ export const initializeStorage = async (): Promise<void> => {
     
     if (error) {
       // Storage listing requires auth - skip silently if not authenticated
-      console.log('Storage: Skipping bucket check (requires authentication)');
+      logger.info('Storage: Skipping bucket check (requires authentication)');
       return;
     }
     
@@ -25,15 +35,15 @@ export const initializeStorage = async (): Promise<void> => {
       
       if (createError) {
         // Bucket creation might be restricted - log but don't throw
-        console.log('Storage: Could not create bucket (may need manual setup in Supabase Dashboard)');
+        logger.info('Storage: Could not create bucket (may need manual setup in Supabase Dashboard)');
         return;
       }
       
-      console.log(`Created ${BOOK_COVERS_BUCKET} bucket`);
+      logger.info(`Created ${BOOK_COVERS_BUCKET} bucket`);
     }
   } catch (error) {
     // Don't throw - storage is optional functionality
-    console.log('Storage initialization skipped:', error instanceof Error ? error.message : 'Unknown error');
+    logger.info('Storage initialization skipped:', error instanceof Error ? error.message : 'Unknown error');
   }
 };
 
@@ -63,7 +73,7 @@ export const uploadBookCover = async (
     
     return data.publicUrl;
   } catch (error) {
-    console.error('Error uploading book cover:', error);
+    logger.error('Error uploading book cover:', error);
     throw error;
   }
 };
@@ -83,7 +93,7 @@ export const deleteBookCover = async (bookId: string, fileExt: string): Promise<
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting book cover:', error);
+    logger.error('Error deleting book cover:', error);
     throw error;
   }
 };

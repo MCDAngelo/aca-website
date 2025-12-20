@@ -5,6 +5,7 @@ import { getBookById, updateBook } from '../services/supabaseService';
 import { Book } from '../types';
 import BookForm from '../components/BookForm';
 import { useAuth } from '../context/AuthContext';
+import { handleError, showSuccess } from '../utils/errorHandler';
 
 const EditBookPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,12 +32,12 @@ const EditBookPage: React.FC = () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['books'] });
       queryClient.invalidateQueries({ queryKey: ['book', id] });
+      showSuccess('Book updated successfully!');
       // Navigate to the book's detail page
       navigate(`/books/${data.id}`);
     },
     onError: (error) => {
-      console.error('Error updating book:', error);
-      alert('Failed to update book. Please try again.');
+      handleError(error, 'Failed to update book. Please try again.');
     },
   });
   

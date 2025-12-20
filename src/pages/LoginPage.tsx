@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 const LoginPage: React.FC = () => {
   const { user, isLoading, signInWithGoogle } = useAuth();
@@ -17,7 +18,7 @@ const LoginPage: React.FC = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      logger.error('Error signing in with Google:', error);
     }
   };
 

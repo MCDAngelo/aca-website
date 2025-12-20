@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { searchBooks, GoogleBookItem } from '../services/googleBooksApi';
+import { QUERY_CONFIG, SEARCH_CONFIG } from '../config/constants';
 
 export const useBookSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,7 +12,7 @@ export const useBookSearch = () => {
     queryKey: ['bookSearch', debouncedTerm],
     queryFn: () => searchBooks(debouncedTerm),
     enabled: debouncedTerm.trim().length > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: QUERY_CONFIG.STALE_TIME,
   });
 
   const handleSearch = (value: string) => {
@@ -24,7 +25,7 @@ export const useBookSearch = () => {
     // Debounce search to avoid too many API calls
     const timeout = setTimeout(() => {
       setDebouncedTerm(value);
-    }, 500);
+    }, SEARCH_CONFIG.DEBOUNCE_MS);
 
     setSearchTimeout(timeout);
   };

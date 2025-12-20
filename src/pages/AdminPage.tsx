@@ -4,17 +4,20 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { useQuery } from '@tanstack/react-query';
 import { getFamilyMembers, getYears, getBooks, getRecommendations } from '../services/supabaseService';
+import { showInfo } from '../utils/errorHandler';
 
 const AdminPage: React.FC = () => {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, familyMember, isAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Redirect non-admin users
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !familyMember)) {
+      navigate('/login');
+    } else if (!authLoading && user && familyMember && !isAdmin) {
       navigate('/');
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, familyMember, isAdmin, authLoading, navigate]);
 
   const { data: familyMembers = [], isLoading: membersLoading } = useQuery({
     queryKey: ['familyMembers'],
@@ -40,21 +43,48 @@ const AdminPage: React.FC = () => {
     enabled: !!user && isAdmin,
   });
 
-  const isLoading = authLoading || membersLoading || yearsLoading || booksLoading || recommendationsLoading;
+  const isLoading = authLoading || (user && isAdmin && (membersLoading || yearsLoading || booksLoading || recommendationsLoading));
 
-  if (isLoading) {
+  // Show loading only while auth is loading or data is loading for confirmed admin
+  if (authLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin panel...</p>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  if (!user || !isAdmin) {
-    return null; // Will redirect from useEffect
+  // User is not authenticated or not a family member
+  if (!user || !familyMember) {
+    return null; // Will redirect to login from useEffect
+  }
+
+  // User is authenticated but not an admin
+  if (!isAdmin) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center bg-white rounded-lg shadow-md p-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">You need administrator privileges to access this page.</p>
+          <Button onClick={() => navigate('/')}>Go to Home</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin data is still loading
+  if (membersLoading || yearsLoading || booksLoading || recommendationsLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin data...</p>
+        </div>
+      </div>
+    );
   }
 
   const adminItems = [
@@ -64,35 +94,35 @@ const AdminPage: React.FC = () => {
       description: 'Add, edit, or remove books from the collection',
       actions: [
         { label: 'View All', href: '/books' },
-        { label: 'Add New', href: '/admin/books/new' },
+        { label: 'Add New', href: '/books/new' },
       ],
     },
     {
       title: 'Manage Years',
       count: years.length,
-      description: 'Add new academic years or set the current active year',
+      description: 'View years and book recommendations',
       actions: [
         { label: 'View All', href: '/years' },
-        { label: 'Add New', href: '/admin/years/new' },
       ],
+      comingSoon: 'Add/Edit/Delete functionality coming soon',
     },
     {
-      title: 'Manage Family Members',
+      title: 'Family Members',
       count: familyMembers.length,
-      description: 'Add or edit family member profiles',
+      description: 'View family member profiles',
       actions: [
-        { label: 'View All', href: '/admin/family-members' },
-        { label: 'Add New', href: '/admin/family-members/new' },
+        { label: 'View in Database', href: '#', external: true },
       ],
+      comingSoon: 'Manage via Supabase Dashboard for now',
     },
     {
-      title: 'Manage Recommendations',
+      title: 'Recommendations',
       count: recommendations.length,
-      description: 'Add, edit, or remove book recommendations',
+      description: 'Track book recommendations by year',
       actions: [
-        { label: 'View All', href: '/admin/recommendations' },
-        { label: 'Add New', href: '/admin/recommendations/new' },
+        { label: 'View All', href: '/years' },
       ],
+      comingSoon: 'Manage via book detail pages for now',
     },
   ];
 
@@ -109,14 +139,29 @@ const AdminPage: React.FC = () => {
                 {item.count}
               </span>
             </div>
-            <p className="text-gray-600 mb-6">{item.description}</p>
+            <p className="text-gray-600 mb-4">{item.description}</p>
+            {item.comingSoon && (
+              <p className="text-sm text-amber-600 mb-4 italic">
+                💡 {item.comingSoon}
+              </p>
+            )}
             <div className="flex space-x-3">
               {item.actions.map((action) => (
-                <Link key={action.label} to={action.href}>
-                  <Button variant={action.label === 'Add New' ? 'primary' : 'outline'}>
+                'external' in action && action.external ? (
+                  <Button 
+                    key={action.label} 
+                    variant="outline"
+                    onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
+                  >
                     {action.label}
                   </Button>
-                </Link>
+                ) : (
+                  <Link key={action.label} to={action.href}>
+                    <Button variant={action.label === 'Add New' ? 'primary' : 'outline'}>
+                      {action.label}
+                    </Button>
+                  </Link>
+                )
               ))}
             </div>
           </div>
@@ -124,13 +169,38 @@ const AdminPage: React.FC = () => {
       </div>
       
       <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Admin Settings</h2>
-        <p className="text-gray-600 mb-4">
-          Additional administrative settings will be implemented in future versions.
-        </p>
-        <Button variant="outline" onClick={() => alert("Settings feature coming soon")}>
-          Settings
-        </Button>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Stats</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">{books.length}</div>
+            <div className="text-sm text-gray-600">Books</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{years.length}</div>
+            <div className="text-sm text-gray-600">Years</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">{familyMembers.length}</div>
+            <div className="text-sm text-gray-600">Family Members</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-amber-600">{recommendations.length}</div>
+            <div className="text-sm text-gray-600">Recommendations</div>
+          </div>
+        </div>
+        
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Database Management</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            For advanced operations (add years, manage family members, set admin roles), use the Supabase Dashboard.
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
+          >
+            Open Supabase Dashboard
+          </Button>
+        </div>
       </div>
     </div>
   );

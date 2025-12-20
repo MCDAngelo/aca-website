@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Button from './Button';
+import { logger } from '../utils/logger';
 
 interface ImageUploaderProps {
   onUpload: (file: File) => Promise<string>;
@@ -46,7 +47,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       
       setImageUrl(url);
     } catch (error) {
-      console.error('Error uploading image:', error);
+      logger.error('Error uploading image:', error);
       setError('Failed to upload image. Please try again.');
     } finally {
       setIsUploading(false);

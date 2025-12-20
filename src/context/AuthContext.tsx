@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
 import { FamilyMember } from '../types';
+import { logger } from '../utils/logger';
 
 type AuthContextType = {
   session: Session | null;
@@ -25,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
+        logger.error('Error getting session:', error);
         setSession(null);
         setUser(null);
         setFamilyMember(null);
@@ -33,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      console.log('Initial session check:', session ? 'Session found' : 'No session');
+      logger.debug('Initial session check:', session ? 'Session found' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
       }
     }).catch((err) => {
-      console.error('Exception getting session:', err);
+      logger.error('Exception getting session:', err);
       setSession(null);
       setUser(null);
       setFamilyMember(null);
@@ -52,12 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change event:', event, 'Has session:', !!session);
+        logger.debug('Auth state change event:', event, 'Has session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_OUT') {
-          console.log('User signed out, clearing all state');
+          logger.debug('User signed out, clearing all state');
           setSession(null);
           setUser(null);
           setFamilyMember(null);
@@ -68,10 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           // This could be a new sign-in or a session refresh
           if (event === 'SIGNED_IN') {
-            console.log('User signed in, checking/creating family member record');
+            logger.debug('User signed in, checking/creating family member record');
             await fetchOrCreateFamilyMember(session.user.id, session.user);
           } else if (event === 'TOKEN_REFRESHED') {
-            console.log('Token refreshed, fetching family member');
+            logger.debug('Token refreshed, fetching family member');
             await fetchFamilyMember(session.user.id);
           } else {
             await fetchFamilyMember(session.user.id);
@@ -90,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchFamilyMember = async (userId: string) => {
     try {
-      console.log('Fetching family member for user:', userId);
+      logger.debug('Fetching family member for user:', userId);
       const { data, error } = await supabase
         .from('family_members')
         .select('*')
@@ -98,14 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
       
       if (error) {
-        console.error('Error fetching family member:', error);
+        logger.error('Error fetching family member:', error);
         setFamilyMember(null);
       } else {
-        console.log('Family member found:', data);
+        logger.debug('Family member found:', data);
         setFamilyMember(data);
       }
     } catch (error) {
-      console.error('Error fetching family member:', error);
+      logger.error('Error fetching family member:', error);
       setFamilyMember(null);
     } finally {
       setIsLoading(false);
@@ -114,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchOrCreateFamilyMember = async (userId: string, userDetails: User) => {
     try {
-      console.log('Checking if family member exists for user:', userId);
+      logger.debug('Checking if family member exists for user:', userId);
       
       // First try to fetch existing family member by user_id
       const { data: existingMember, error: fetchError } = await supabase
@@ -124,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
       
       if (!fetchError && existingMember) {
-        console.log('Existing family member found with user_id:', existingMember);
+        logger.debug('Existing family member found with user_id:', existingMember);
         setFamilyMember(existingMember);
         setIsLoading(false);
         return;
@@ -133,13 +134,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // No user_id match - check if there's a family member with this email
       const userEmail = userDetails.email;
       if (!userEmail) {
-        console.error('No email found for Google user');
+        logger.error('No email found for Google user');
         setFamilyMember(null);
         setIsLoading(false);
         return;
       }
       
-      console.log('Checking for family member with email:', userEmail);
+      logger.debug('Checking for family member with email:', userEmail);
       const { data: memberByEmail, error: emailError } = await supabase
         .from('family_members')
         .select('*')
@@ -147,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
       
       if (emailError) {
-        console.error('Error looking up family member by email:', emailError);
+        logger.error('Error looking up family member by email:', emailError);
         setFamilyMember(null);
         setIsLoading(false);
         return;
@@ -155,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (memberByEmail) {
         // Found a family member with matching email - link them!
-        console.log('Found family member with matching email, linking accounts:', memberByEmail);
+        logger.debug('Found family member with matching email, linking accounts:', memberByEmail);
         
         const { data: updatedMember, error: updateError } = await supabase
           .from('family_members')
@@ -165,22 +166,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
         
         if (updateError) {
-          console.error('Error linking family member to user:', updateError);
+          logger.error('Error linking family member to user:', updateError);
           setFamilyMember(null);
         } else {
-          console.log('Successfully linked family member to user:', updatedMember);
+          logger.debug('Successfully linked family member to user:', updatedMember);
           setFamilyMember(updatedMember);
         }
       } else {
         // No matching email found - unauthorized access
-        console.error('No family member found with email:', userEmail);
-        console.error('This Google account is not authorized to access this application');
+        logger.error('No family member found with email:', userEmail);
+        logger.error('This Google account is not authorized to access this application');
         setFamilyMember(null);
         // Optionally sign the user out since they're not authorized
         await supabase.auth.signOut();
       }
     } catch (error) {
-      console.error('Error in fetchOrCreateFamilyMember:', error);
+      logger.error('Error in fetchOrCreateFamilyMember:', error);
       setFamilyMember(null);
     } finally {
       setIsLoading(false);
@@ -197,22 +198,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      logger.error('Error signing in with Google:', error);
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
-      console.log('Signing out...');
+      logger.debug('Signing out...');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Supabase signOut error:', error);
+        logger.error('Supabase signOut error:', error);
         throw error;
       }
       
       // Clear state immediately
-      console.log('Clearing auth state...');
+      logger.debug('Clearing auth state...');
       setSession(null);
       setUser(null);
       setFamilyMember(null);
@@ -221,14 +222,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
         if (key.includes('supabase')) {
-          console.log('Clearing localStorage key:', key);
+          logger.debug('Clearing localStorage key:', key);
           localStorage.removeItem(key);
         }
       });
       
-      console.log('Sign out complete');
+      logger.debug('Sign out complete');
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
       
       // Even if there's an error, try to clear local state
       setSession(null);

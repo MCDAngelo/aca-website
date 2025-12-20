@@ -6,6 +6,10 @@ import ImageUploader from './ImageUploader';
 import { uploadBookCover } from '../services/storageService';
 import { searchBooks } from '../services/googleBooksApi';
 import { getPlaceholderColor } from '../utils/placeholderUtils';
+import { logger } from '../utils/logger';
+import { handleError, showWarning } from '../utils/errorHandler';
+import { SEARCH_CONFIG } from '../config/constants';
+import { bookSchema, sanitizeText } from '../utils/validation';
 
 interface BookFormProps {
   initialData?: Partial<Book>;
@@ -64,9 +68,9 @@ const BookForm: React.FC<BookFormProps> = ({
         setIsSearching(true);
         setSearchTerm(title);
         const results = await searchBooks(title);
-        setGoogleBooksResults(results.slice(0, 5)); // Show top 5 results
+        setGoogleBooksResults(results.slice(0, SEARCH_CONFIG.MAX_GOOGLE_BOOKS_RESULTS));
       } catch (error) {
-        console.error('Error searching Google Books:', error);
+        logger.error('Error searching Google Books:', error);
       } finally {
         setIsSearching(false);
       }
@@ -102,7 +106,7 @@ const BookForm: React.FC<BookFormProps> = ({
       setUseGoogleBooksCover(false);
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      logger.error('Error uploading image:', error);
       throw error;
     }
   };
@@ -113,7 +117,7 @@ const BookForm: React.FC<BookFormProps> = ({
     const author = watchedAuthor;
     
     if (!title || title.length < 2) {
-      alert('Please enter a book title first');
+      showWarning('Please enter a book title first');
       return;
     }
     
@@ -126,8 +130,7 @@ const BookForm: React.FC<BookFormProps> = ({
       const resultsWithCovers = results.filter(book => book.volumeInfo.imageLinks?.thumbnail);
       setCoverSearchResults(resultsWithCovers.slice(0, 10));
     } catch (error) {
-      console.error('Error searching for covers:', error);
-      alert('Failed to search for covers. Please try again.');
+      handleError(error, 'Failed to search for covers. Please try again.');
     } finally {
       setIsSearchingCovers(false);
     }
@@ -144,9 +147,40 @@ const BookForm: React.FC<BookFormProps> = ({
   };
   
   const processFormData = (data: FormData): Partial<Book> => {
+    // Sanitize text inputs
+    const sanitizedData = {
+      ...data,
+      title: sanitizeText(data.title),
+      author: sanitizeText(data.author || ''),
+      description: data.description ? sanitizeText(data.description) : undefined,
+    };
+    
+    // Validate with Zod
+    try {
+      const validationResult = bookSchema.safeParse({
+        title: sanitizedData.title,
+        author: sanitizedData.author,
+        publication_year: sanitizedData.publication_year,
+        isbn: sanitizedData.isbn || '',
+        cover_image_url: sanitizedData.cover_image || '',
+        description: sanitizedData.description || '',
+      });
+      
+      if (!validationResult.success) {
+        const firstError = validationResult.error.issues[0];
+        showWarning(`${firstError.path.join('.')}: ${firstError.message}`);
+        throw new Error('Validation failed');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Validation failed') {
+        throw error;
+      }
+      logger.error('Validation error:', error);
+    }
+    
     // Process categories from comma-separated string to array
-    const categories = data.categories_string
-      ? data.categories_string.split(',').map(cat => cat.trim()).filter(Boolean)
+    const categories = sanitizedData.categories_string
+      ? sanitizedData.categories_string.split(',').map(cat => cat.trim()).filter(Boolean)
       : undefined;
     
     const bookData: Partial<Book> = {

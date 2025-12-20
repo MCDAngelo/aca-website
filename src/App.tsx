@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
-import { initializeStorage } from './services/storageService';
-import runAllDiagnostics from './utils/debugAuth';
+import { logger } from './utils/logger';
 import './App.css';
 
 // Create a client
@@ -23,56 +23,40 @@ const EditBookPage = React.lazy(() => import('./pages/EditBookPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 
-// Debug component for route debugging
-const DebugRoute = ({ path }: { path: string }) => {
-  console.log(`Debug route matched: ${path}`);
-  return (
-    <div className="p-8 bg-library-burgundy/20 border border-library-burgundy rounded">
-      <h2 className="font-serif text-xl text-library-burgundy">Route Debug</h2>
-      <p className="mt-2 text-library-brown">Matched path: {path}</p>
-      <p className="mt-1 text-library-wood">This route is being caught by a debug handler.</p>
-    </div>
-  );
-};
-
-// Load test utilities in development mode
-if (process.env.NODE_ENV === 'development') {
-  import('./utils/testApi').then((module) => {
-    console.log('Test utilities loaded. Access via `acaApiTests` in console.');
-  });
-}
-
 const App: React.FC = () => {
-  // Add version info to console for debugging
+  // Log app version in development
   useEffect(() => {
-    console.log('ACA Archive v0.1.0');
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Current URL:', window.location.href);
-
-    // Run diagnostics in development mode
-    if (process.env.NODE_ENV === 'development') {
-      runAllDiagnostics().catch(err => {
-        console.error('Error running diagnostics:', err);
-      });
-    }
-
-    // Initialize storage buckets
-    const setupStorage = async () => {
-      try {
-        await initializeStorage();
-        console.log('Storage buckets initialized');
-      } catch (error) {
-        console.error('Failed to initialize storage buckets:', error);
-      }
-    };
-
-    setupStorage();
+    logger.info('ACA Archive v0.1.0');
+    logger.info('Environment:', process.env.NODE_ENV);
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#2C1810',
+                color: '#F5F1E8',
+                fontFamily: 'Georgia, serif',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#D4AF37',
+                  secondary: '#F5F1E8',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#8B1538',
+                  secondary: '#F5F1E8',
+                },
+              },
+            }}
+          />
           <div className="min-h-screen bg-library-cream">
             <Navbar />
             <main className="py-8">
@@ -90,10 +74,6 @@ const App: React.FC = () => {
                     <Route path="/books" element={<BooksPage />} />
                     <Route path="/books/new" element={<AddBookPage />} />
                     <Route path="/books/edit/:id" element={<EditBookPage />} />
-                    
-                    {/* Debug routes to help diagnose issues */}
-                    <Route path="/books/new/*" element={<DebugRoute path="/books/new/*" />} />
-                    <Route path="/books/edit/*" element={<DebugRoute path="/books/edit/*" />} />
                     
                     {/* Dynamic ID route comes after all specific book routes */}
                     <Route path="/books/:id" element={<BookDetailPage />} />
