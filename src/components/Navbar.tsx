@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 import { handleError } from '../utils/errorHandler';
 
 const Navbar: React.FC = () => {
-  const { user, familyMember, isAdmin, signOut } = useAuth();
+  const { user, familyMember, isAdmin, isLoading, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const location = useLocation();
@@ -104,7 +104,9 @@ const Navbar: React.FC = () => {
             </div>
           </div>
           <div className="hidden md:flex md:items-center md:ml-6">
-            {user ? (
+            {isLoading ? (
+              <div className="w-20 h-8 bg-library-saddle/30 rounded animate-pulse"></div>
+            ) : user ? (
               <div className="flex items-center space-x-4">
                 {familyMember && (
                   <div className="text-sm text-library-cream/70 mr-2">
@@ -166,7 +168,9 @@ const Navbar: React.FC = () => {
         </div>
         <div className="pt-4 pb-3 border-t border-library-saddle/30">
           <div className="flex items-center px-5">
-            {user ? (
+            {isLoading ? (
+              <div className="w-full h-10 bg-library-saddle/30 rounded animate-pulse"></div>
+            ) : user ? (
               <div className="w-full">
                 {familyMember && (
                   <div className="text-library-cream/70 mb-3">

@@ -61,7 +61,9 @@ const HomePage: React.FC = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-wrap justify-center gap-4">
-            {user && familyMember ? (
+            {authLoading ? (
+              <div className="w-48 h-12 bg-library-cream/20 rounded animate-pulse"></div>
+            ) : user && familyMember ? (
               <>
                 <Link to="/years">
                   <Button className="px-6 py-3 text-base">Browse by Year</Button>
@@ -85,7 +87,13 @@ const HomePage: React.FC = () => {
 
       {/* Main content area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {user ? (
+        {authLoading ? (
+          <div className="vintage-card rounded-lg p-8">
+            <div className="flex justify-center items-center h-32">
+              <div className="w-8 h-8 border-2 border-library-teal border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        ) : user && familyMember ? (
           <div className="vintage-card rounded-lg p-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-serif text-2xl text-library-brown">Latest Recommendations</h2>
