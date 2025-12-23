@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -21,6 +21,8 @@ const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 const AddBookPage = React.lazy(() => import('./pages/AddBookPage'));
 const EditBookPage = React.lazy(() => import('./pages/EditBookPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = React.lazy(() => import('./pages/TermsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 
 const App: React.FC = () => {
@@ -84,6 +86,8 @@ const App: React.FC = () => {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/admin" element={<AdminPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </React.Suspense>
@@ -91,6 +95,21 @@ const App: React.FC = () => {
             </main>
             <footer className="bg-library-brown py-6 border-t border-library-saddle/30">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-3">
+                  <Link 
+                    to="/privacy" 
+                    className="text-library-cream/70 hover:text-library-gold text-sm font-serif transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <span className="hidden sm:inline text-library-cream/50">•</span>
+                  <Link 
+                    to="/terms" 
+                    className="text-library-cream/70 hover:text-library-gold text-sm font-serif transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                </div>
                 <p className="text-center text-library-cream/70 text-sm font-serif">
                   &copy; {new Date().getFullYear()} ACA Archive. All rights reserved.
                 </p>

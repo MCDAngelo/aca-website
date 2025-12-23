@@ -11,6 +11,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -203,6 +204,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithMicrosoft = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: window.location.origin,
+          scopes: 'email',
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      logger.error('Error signing in with Microsoft:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       logger.debug('Signing out...');
@@ -257,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin,
     isLoading,
     signInWithGoogle,
+    signInWithMicrosoft,
     signOut,
   };
 

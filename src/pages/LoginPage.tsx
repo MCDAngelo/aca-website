@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/logger';
 
 const LoginPage: React.FC = () => {
-  const { user, isLoading, signInWithGoogle } = useAuth();
+  const { user, isLoading, signInWithGoogle, signInWithMicrosoft } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +19,14 @@ const LoginPage: React.FC = () => {
       await signInWithGoogle();
     } catch (error) {
       logger.error('Error signing in with Google:', error);
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    try {
+      await signInWithMicrosoft();
+    } catch (error) {
+      logger.error('Error signing in with Microsoft:', error);
     }
   };
 
@@ -55,6 +63,19 @@ const LoginPage: React.FC = () => {
               <path fill="none" d="M0 0h48v48H0z"/>
             </svg>
             Sign in with Google
+          </button>
+
+          <button
+            onClick={handleMicrosoftSignIn}
+            className="w-full flex items-center justify-center bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" className="mr-2">
+              <path fill="#ff5722" d="M6 6h18v18H6z"/>
+              <path fill="#4caf50" d="M26 6h18v18H26z"/>
+              <path fill="#ffc107" d="M6 26h18v18H6z"/>
+              <path fill="#03a9f4" d="M26 26h18v18H26z"/>
+            </svg>
+            Sign in with Microsoft
           </button>
           
           <div className="mt-6 text-center text-sm text-gray-500">
