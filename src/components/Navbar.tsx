@@ -49,24 +49,25 @@ const Navbar: React.FC = () => {
   };
 
   // Build navigation links based on user authentication status
+  // Only show auth-dependent links once loading is complete to avoid inconsistent UI
   const navLinks = [
     { to: '/', label: 'Home' },
   ];
 
-  // Only show these links when user is authenticated and a family member
-  if (user && familyMember) {
+  // Only show these links when auth is resolved AND user is authenticated
+  if (!isLoading && user && familyMember) {
     navLinks.push({ to: '/years', label: 'Years' });
     navLinks.push({ to: '/books', label: 'Books' });
     navLinks.push({ to: '/books/new', label: 'Add Book' });
   }
 
-  // Admin link for admin users
-  if (isAdmin) {
+  // Admin link for admin users (only when auth is resolved)
+  if (!isLoading && isAdmin) {
     navLinks.push({ to: '/admin', label: 'Admin' });
   }
 
-  // Settings link for authenticated users
-  if (user) {
+  // Settings link for authenticated users (only when auth is resolved)
+  if (!isLoading && user) {
     navLinks.push({ to: '/settings', label: 'Settings' });
   }
 
@@ -104,9 +105,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
           <div className="hidden md:flex md:items-center md:ml-6">
-            {isLoading ? (
-              <div className="w-20 h-8 bg-library-saddle/30 rounded animate-pulse"></div>
-            ) : user ? (
+            {user ? (
               <div className="flex items-center space-x-4">
                 {familyMember && (
                   <div className="text-sm text-library-cream/70 mr-2">
@@ -168,9 +167,7 @@ const Navbar: React.FC = () => {
         </div>
         <div className="pt-4 pb-3 border-t border-library-saddle/30">
           <div className="flex items-center px-5">
-            {isLoading ? (
-              <div className="w-full h-10 bg-library-saddle/30 rounded animate-pulse"></div>
-            ) : user ? (
+            {user ? (
               <div className="w-full">
                 {familyMember && (
                   <div className="text-library-cream/70 mb-3">

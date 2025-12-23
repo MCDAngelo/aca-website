@@ -23,6 +23,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [familyMember, setFamilyMember] = useState<FamilyMember | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Safety timeout - if loading takes more than 10 seconds, stop loading to prevent infinite hang
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        logger.error('Auth loading timeout - forcing loading to complete');
+        setIsLoading(false);
+      }
+    }, 10000);
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -220,47 +231,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    try {
-      logger.debug('Signing out...');
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        logger.error('Supabase signOut error:', error);
-        throw error;
+    logger.debug('Signing out...');
+    
+    // Clear local state FIRST - this ensures user is "logged out" locally
+    // even if the Supabase call hangs or fails
+    logger.debug('Clearing auth state...');
+    setSession(null);
+    setUser(null);
+    setFamilyMember(null);
+    
+    // Clear localStorage immediately
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('supabase')) {
+        logger.debug('Clearing localStorage key:', key);
+        localStorage.removeItem(key);
       }
+    });
+    
+    // Try to sign out from Supabase with a timeout
+    // If this fails or hangs, user is still signed out locally
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
+      );
       
-      // Clear state immediately
-      logger.debug('Clearing auth state...');
-      setSession(null);
-      setUser(null);
-      setFamilyMember(null);
-      
-      // Also clear localStorage to ensure clean sign out
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.includes('supabase')) {
-          logger.debug('Clearing localStorage key:', key);
-          localStorage.removeItem(key);
-        }
-      });
+      await Promise.race([
+        supabase.auth.signOut(),
+        timeoutPromise
+      ]);
       
       logger.debug('Sign out complete');
     } catch (error) {
-      logger.error('Error signing out:', error);
-      
-      // Even if there's an error, try to clear local state
-      setSession(null);
-      setUser(null);
-      setFamilyMember(null);
-      
-      // Clear localStorage anyway
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.includes('supabase')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      throw error;
+      // Log but don't throw - user is already signed out locally
+      logger.error('Supabase signOut error (user signed out locally):', error);
     }
   };
 

@@ -8,7 +8,7 @@ import logoImage from '../assets/ACA_book_plate_logo.png';
 import { UI_CONFIG } from '../config/constants';
 
 const HomePage: React.FC = () => {
-  const { user, familyMember, isLoading: authLoading } = useAuth();
+  const { user, familyMember, isLoading: authLoading, signOut } = useAuth();
   const { recommendations, isLoading: recLoading } = useRecommendations();
   const isLoading = authLoading || recLoading;
 
@@ -61,9 +61,7 @@ const HomePage: React.FC = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-wrap justify-center gap-4">
-            {authLoading ? (
-              <div className="w-48 h-12 bg-library-cream/20 rounded animate-pulse"></div>
-            ) : user && familyMember ? (
+            {user && familyMember ? (
               <>
                 <Link to="/years">
                   <Button className="px-6 py-3 text-base">Browse by Year</Button>
@@ -74,6 +72,14 @@ const HomePage: React.FC = () => {
                   </Button>
                 </Link>
               </>
+            ) : user && authLoading ? (
+              <div className="text-library-cream/70 text-base">
+                Loading your profile...
+              </div>
+            ) : user ? (
+              <div className="text-library-cream/70 text-base">
+                Unable to load profile. Try signing out and back in.
+              </div>
             ) : (
               <Link to="/login">
                 <Button variant="secondary" className="px-6 py-3 text-base">
@@ -87,13 +93,7 @@ const HomePage: React.FC = () => {
 
       {/* Main content area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {authLoading ? (
-          <div className="vintage-card rounded-lg p-8">
-            <div className="flex justify-center items-center h-32">
-              <div className="w-8 h-8 border-2 border-library-teal border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          </div>
-        ) : user && familyMember ? (
+        {user && familyMember ? (
           <div className="vintage-card rounded-lg p-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-serif text-2xl text-library-brown">Latest Recommendations</h2>
@@ -150,6 +150,42 @@ const HomePage: React.FC = () => {
                 No recommendations yet.
               </div>
             )}
+          </div>
+        ) : user && authLoading ? (
+          <div className="vintage-card rounded-lg p-12 text-center">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-8 h-8 border-2 border-library-teal border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+              <h2 className="font-serif text-2xl text-library-brown mb-4">
+                Loading your profile...
+              </h2>
+              <p className="text-library-wood">
+                Please wait while we fetch your family member information.
+              </p>
+            </div>
+          </div>
+        ) : user ? (
+          <div className="vintage-card rounded-lg p-12 text-center">
+            <div className="max-w-2xl mx-auto">
+              <svg className="w-16 h-16 mx-auto mb-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h2 className="font-serif text-2xl text-library-brown mb-4">
+                Profile Not Found
+              </h2>
+              <p className="text-library-wood mb-6">
+                We couldn't load your family member profile. This might be a temporary issue or your account may not be linked yet.
+              </p>
+              <Button 
+                onClick={async () => {
+                  await signOut();
+                  window.location.reload();
+                }} 
+                variant="outline"
+                className="px-6 py-2"
+              >
+                Sign Out and Try Again
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="vintage-card rounded-lg p-12 text-center">
