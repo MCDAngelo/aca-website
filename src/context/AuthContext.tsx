@@ -11,7 +11,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithMicrosoft: () => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -204,18 +204,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithMicrosoft = async () => {
+  const signInWithMagicLink = async (email: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'azure',
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
         options: {
-          redirectTo: window.location.origin,
-          scopes: 'email',
+          emailRedirectTo: window.location.origin,
         },
       });
       if (error) throw error;
     } catch (error) {
-      logger.error('Error signing in with Microsoft:', error);
+      logger.error('Error signing in with magic link:', error);
       throw error;
     }
   };
@@ -274,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin,
     isLoading,
     signInWithGoogle,
-    signInWithMicrosoft,
+    signInWithMagicLink,
     signOut,
   };
 
